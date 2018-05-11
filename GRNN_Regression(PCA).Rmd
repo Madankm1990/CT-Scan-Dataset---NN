@@ -1,0 +1,99 @@
+---
+title: "PCA GRNN"
+output: html_document
+---
+
+```{r install/load package}
+#install.packages('grnn')
+library(grnn)
+```
+
+
+```{r set working directory}
+dir = getwd()
+setwd('C:/Users/madfa/Downloads/Knowledge Engieering/CA CI/OnlineNewsPopularity/OnlineNewsPopularity')
+getwd()
+```
+
+
+```{r load data}
+PCA_data = read.csv("slice_localization_data_PCA.csv", header=TRUE)
+#summary(data)
+head(PCA_data)
+```
+
+
+
+```{r Removing Patient ID}
+PCA_data$patientId <- NULL
+```
+
+
+```{r splitting into test and train}
+size=nrow(PCA_data)
+length=ncol(PCA_data)
+index <- 1:size
+
+positions <- sample(index, trunc(size * 0.75))
+
+training <- PCA_data[positions,]
+testing <- PCA_data[-positions,1:length-1]
+result = PCA_data[-positions,]
+result$actual = result[,length]
+result$predict = -1
+```
+
+
+```{r }
+nn <- learn(training, variable.column=length)
+nn <- smooth(nn, sigma = 0.5)
+```
+
+```{r }
+for(i in 1:nrow(testing))
+{	
+	vec <- as.matrix(testing[i,])
+	res <- guess(nn, vec)
+	
+	if(is.nan(res))
+	{
+		cat("Entry ",i," Generated NaN result!\n")
+	}
+	else
+	{
+		result$predict[i] <- res
+	}
+}
+```
+
+
+
+
+```{r modle validation}
+result.size = nrow(result)
+result.correct = nrow(result[round(result$predict,0) == round(result$actual,0),])
+plot(x = result$actual,y = result$predict)
+cat("No of test cases = ",result.size,"\n")
+cat("Correct predictions = ", result.correct ,"\n")
+cat("Accuracy = ", result.correct / result.size * 100 ,"\n")
+```
+
+
+
+```{r}
+write.csv(result, file="result_PCA2.csv")
+```
+
+
+```{r GRNN Model Validation}
+#install.packages("hydroGOF")
+library(hydroGOF)
+RMSE=rmse(result$predict,result$actual)
+
+#Manual Code to calculate rsq 
+rss <- sum((result$predict - result$actual)^2)
+tss <- sum((result$actual - mean(result$actual))^2)
+rsq <- 1 - (rss/tss)
+cat("R-Square : ", rsq)
+```
+

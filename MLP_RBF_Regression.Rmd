@@ -1,0 +1,77 @@
+---
+title: "MLP_Regression"
+output: html_document
+---
+
+```{r}
+#install.packages("RSNNS")
+library(RSNNS)
+```
+
+
+```{r}
+dir = getwd()
+setwd('C:/Users/madfa/Downloads/Knowledge Engieering/CA CI/OnlineNewsPopularity/OnlineNewsPopularity')
+getwd()
+```
+
+
+
+```{r load the data}
+MLP_data = read.csv("slice_localization_data_PCA.csv", header=TRUE)
+#summary(data)
+head(MLP_data)
+```
+
+
+```{r split data to test and train}
+smp_size <- floor(0.75 * nrow(MLP_data))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(MLP_data)), size = smp_size)
+
+train <- MLP_data[train_ind, ]
+train$patientId <- NULL
+trainX <- train[c(1:56)]
+trainY <- train[c(57:57)]
+test <- MLP_data[-train_ind, ]
+testX <- test[c(1:56)]
+testY <- test[c(57:57)]
+```
+
+```{r}
+model <- mlp(trainX, trainY, size=10, learnFuncParams=c(0.2), 
+              maxit=1000, inputsTest=testX, targetsTest=testY)
+
+plotIterativeError(model)
+```
+
+```{r mlp model}
+summary(model)
+model
+
+plotIterativeError(model)
+
+predictions <- predict(model,testX)
+
+plotRegressionError(predictions[,1], testY[,1])
+dim(predictions)
+dim(testY)
+
+rss <- sum((predictions - testY)^2)
+tss <- sum((testY - mean(testY))^2)
+rsq <- 1 - (rss/tss)
+
+```
+```{r rbf model}
+model_rbf <- rbf(trainX, trainY, size=10, maxit=1000,
+initFuncParams=c(0, 1, 0, 0.01, 0.01),
+learnFuncParams=c(1e-8, 0, 1e-8, 0.1, 0.8), linOut=TRUE)
+plotIterativeError(model_rbf)
+
+rss <- sum((result$predict - result$actual)^2)
+tss <- sum((result$actual - mean(result$actual))^2)
+rsq <- 1 - (rss/tss)
+```
+
